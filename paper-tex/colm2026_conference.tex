@@ -1,0 +1,328 @@
+\documentclass{article}
+\usepackage[submission]{colm2026_conference}
+
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{lineno}
+
+% Optional math commands
+\input{math_commands.tex}
+
+\definecolor{darkblue}{rgb}{0, 0, 0.5}
+\hypersetup{colorlinks=true, citecolor=darkblue, linkcolor=darkblue, urlcolor=darkblue}
+
+\title{Broadcasting, Not Conversing: What Happens When 78,000 AI Agents Interact at Scale}
+
+% Anonymous submission
+\author{Anonymous Authors}
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\begin{document}
+
+\ifcolmsubmission
+\linenumbers
+\fi
+
+\maketitle
+
+\begin{abstract}
+As enterprises adopt multi-agent architectures and agent-to-agent (A2A) protocols proliferate, a fundamental question arises: what actually happens when autonomous LLM agents interact at scale? We study this question empirically using Moltbook, an AI-agent-only social platform comprising 800K posts, 3.5M comments, and 78K agent profiles. We apply three lightweight metrics requiring no access to agent internals: (1) \emph{agent behavioral entropy}, measuring within-agent output diversity across contexts; (2) \emph{information saturation}, measuring the marginal information contributed by each additional agent responding to a post; and (3) \emph{post-comment relevance}, measuring whether comments are specific to their posts or interchangeable with random posts. Our findings reveal that while most agents (67.5\%) do vary their output across contexts, 65\% of comments share no distinguishing content vocabulary with the post they appear under (median lexical specificity $= 0$); only 27\% show meaningful post-specific overlap. Information saturates rapidly: by the 15th comment on a post, each new comment contributes only 30\% novel unigrams. These results suggest that large-scale agent interaction, without explicit coordination mechanisms, produces \emph{broadcasting}---agents generating independent outputs in proximity---rather than \emph{conversation}. We discuss implications for enterprise A2A system design and monitoring.
+\end{abstract}
+
+\section{Introduction}
+
+The multi-agent AI paradigm is expanding rapidly. Frameworks such as AutoGen~\citep{wu2024autogen}, CrewAI~\citep{crewai2024}, MetaGPT~\citep{hong2023metagpt}, and LangGraph~\citep{langchain2024langgraph} allow developers to compose multiple LLM agents into collaborative systems. Protocol standards---Google's Agent-to-Agent (A2A)~\citep{google2025a2a} and the Agent Communication Protocol (ACP)~\citep{ibm2025acp}---are emerging to enable interoperability across agent providers. The implicit promise is that putting agents together yields productive interaction: negotiation, coordination, and collaborative problem-solving.
+
+But does it? When agents interact without human mediation, do they actually engage with each other's content---or do they merely produce text in proximity?
+
+We study this question using Moltbook~\citep{schlicht2026socialnetwork}, a publicly available agent-only social platform. Launched in January 2026, Moltbook hosts over 78,000 LLM-driven agents that post, comment, and interact across topic-based communities (``submolts'') with no human participants. Unlike controlled multi-agent experiments that study small groups of agents with defined roles~\citep{park2023generative,li2023camel,chen2023agentverse}, Moltbook represents \emph{unsupervised}, \emph{large-scale}, \emph{organic} agent interaction---a useful proxy for what enterprise A2A ecosystems might produce when agents operate at scale without tight coordination.
+
+Prior work on Moltbook has examined network structure and macro-level dynamics. \citet{perez2026socialization} found that agents show ``profound individual inertia'' with no emergent socialization. \citet{lin2026exploring} characterized the platform's community structure. \citet{Jiang2026HumansWT} provided an initial observational study. \citet{manik2026openclaw} studied norm enforcement. However, none of these works analyze the \emph{information content} of agent-agent interactions at the conversation level.
+
+We contribute such an analysis. Using three lightweight metrics that require only conversation text---no access to system prompts, model architectures, or internal states---we characterize what agents actually produce when they interact. Our metrics are:
+
+\begin{enumerate}
+    \item \textbf{Agent Behavioral Entropy:} Does an agent vary its output across different posts, or does it produce templated content regardless of context?
+    \item \textbf{Information Saturation:} When multiple agents comment on the same post, does each additional comment contribute new information?
+    \item \textbf{Post-Comment Relevance:} Is a comment specific to the post it appears under, or could it be placed under any random post?
+\end{enumerate}
+
+Our key finding is that large-scale agent interaction produces \emph{broadcasting, not conversing}. While most agents do vary their vocabulary across contexts (67.5\% have high self-NCD), 65\% of comments share no distinguishing content vocabulary with the post they appear under. Only 27\% show meaningful post-specific lexical overlap, and these are concentrated among longer comments. Meanwhile, information saturates rapidly as comments accumulate: by position 15, marginal unigram novelty drops to 30\%.
+
+For enterprises building A2A systems, these findings suggest that simply deploying agents to ``interact'' is insufficient. Without explicit coordination mechanisms---structured turn-taking, shared state, task decomposition---the result is parallel broadcasting, not collaboration. Surface-level metrics like comment count or agent participation are unreliable signals of productive interaction.
+
+\section{Related Work}
+\label{sec:related_work}
+
+\paragraph{Multi-agent LLM systems.}
+Multi-agent architectures have been proposed for debate~\citep{du2023improving}, collaborative coding~\citep{hong2023metagpt}, game playing~\citep{guan2024richelieu}, social simulation~\citep{park2023generative,piao2025agentsociety,al2024project}, and cooperative reasoning~\citep{grotschla2025agentsnet,wu2024shall}. These systems typically involve 2--10 agents with pre-defined roles operating in controlled settings. \citet{guo2024large} surveys the landscape. Our work differs in studying \emph{uncontrolled} interaction among tens of thousands of agents with no explicit coordination mechanism.
+
+\paragraph{Agent social platforms.}
+Moltbook~\citep{schlicht2026socialnetwork} is an AI-only social network hosting over 78K agents. Prior analyses include \citet{perez2026socialization}, who found dynamic equilibrium without convergence; \citet{lin2026exploring}, who characterized community structure; and \citet{Jiang2026HumansWT}, who provided an initial observational study. \citet{zhu2025characterizing} studied Chirper.ai, another AI social platform. To our knowledge, no prior work applies information-theoretic metrics to the \emph{content} of agent interactions at this scale.
+
+\paragraph{Behavioral failures in multi-agent interaction.}
+\citet{shekkizhar2026echoing} identified \emph{echoing}, where agents abandon their assigned identity and mirror their conversation partner, occurring at 5--70\% rates in controlled dyadic settings. \citet{sharma2024sycophancy} studied sycophancy in language models. \citet{ashery2025emergent} found emergent collective bias in LLM populations. \citet{chuang-etal-2024-simulating} showed that LLM agents converge to scientifically accurate consensus, requiring prompt engineering to reproduce human-like opinion fragmentation. These works study controlled settings; our contribution is observational analysis at population scale.
+
+\paragraph{Information-theoretic text analysis.}
+We use Shannon entropy~\citep{shannon1948mathematical} for diversity measures, the Normalized Compression Distance (NCD)~\citep{cilibrasi2005clustering} for within-agent self-similarity, and content-word Jaccard similarity for post-comment relevance. We found NCD unreliable for the relevance task at typical comment lengths (see \S\ref{sec:metrics}). Unlike embedding-based metrics~\citep{reimers-2019-sentence-bert}, our measures require no model inference and are language-agnostic.
+
+
+\section{Data Collection}
+\label{sec:dataset}
+
+Moltbook is a social platform where all participants are LLM-driven agents; there are no human users. Agents create posts, comment on posts, and interact across topic-based communities (``submolts''). We construct a combined corpus from three independently collected HuggingFace snapshots of the platform: \texttt{lnajt/moltbook} (668K posts, 2.84M comments), \texttt{AIcell/moltbook-data} (290K posts, 1.84M comments), and \texttt{SimulaMet/moltbook-observatory-archive} (214K posts, 882K comments, plus 78K agent profiles with textual descriptions). After deduplication by unique ID, the combined corpus contains:
+
+\begin{itemize}
+    \item \textbf{800,730 posts} across hundreds of submolts (topic communities)
+    \item \textbf{3,530,443 comments} from \textbf{22,651 unique agents}
+    \item \textbf{78,280 agent profiles} with persona descriptions
+    \item \textbf{Date range:} January 27 -- February 17, 2026 (3 weeks)
+\end{itemize}
+
+\paragraph{Structural observation.}
+A critical feature of the data: \textbf{95.0\% of comments are top-level responses to posts} (depth 0). Only 5.0\% are nested replies to other comments. This is consistent across all three source datasets, confirming it as a platform-level property rather than a collection artifact. The interaction model is therefore: \emph{a post appears, and agents comment below it independently, sorted by time}. There is minimal evidence of agents responding to each other's comments.
+
+\paragraph{Agent activity.}
+The median post receives 4 comments (mean 10.1, 95th percentile 24). The median agent has commented on 3 distinct posts. Agents with $\geq 10$ comments number 8,452. Notably, 19.7\% of (agent, post) pairs involve the same agent commenting multiple times on the same post, with one agent posting 1,002 times on a single post.
+
+Figure~\ref{fig:overview} shows the distribution of comments per post, comments per agent, and the most active submolts.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/dataset_overview.pdf}
+    \caption{Dataset overview. (a) Comments per post distribution (median 4, heavy tail). (b) Comments per agent distribution (median 3). (c) Top 15 submolts by post count.}
+    \label{fig:overview}
+\end{figure}
+
+
+\section{Methodology}
+\label{sec:metrics}
+
+We propose three lightweight metrics that operate on text alone, requiring no access to agent internals (system prompts, model weights, or embedding models). The entropy and saturation metrics use information-theoretic measures (Shannon entropy, compression distance); the relevance metric uses lexical overlap.
+
+\subsection{Agent Behavioral Entropy}
+
+For an agent $a$ with comments $\{c_1, c_2, \ldots, c_n\}$ across different posts, we measure how much the agent's output varies across contexts.
+
+\paragraph{Token entropy.} Pool all tokens from agent $a$'s comments and compute Shannon entropy:
+\begin{equation}
+H_a = -\sum_{w \in \mathcal{V}_a} p_a(w) \log_2 p_a(w)
+\end{equation}
+where $p_a(w)$ is the relative frequency of token $w$ in agent $a$'s pooled output and $\mathcal{V}_a$ is the agent's vocabulary. Higher entropy indicates more diverse vocabulary usage.
+
+\paragraph{Self-NCD.} Compute the average Normalized Compression Distance~\citep{cilibrasi2005clustering} between random pairs of the agent's own comments:
+\begin{equation}
+\text{Self-NCD}(a) = \frac{1}{K} \sum_{(i,j) \in S} \text{NCD}(c_i, c_j)
+\end{equation}
+where $S$ is a set of $K$ randomly sampled pairs (we use $K=30$) and
+\begin{equation}
+\text{NCD}(x, y) = \frac{C(xy) - \min(C(x), C(y))}{\max(C(x), C(y))}
+\end{equation}
+with $C(\cdot)$ denoting compressed length. Self-NCD $\approx 0$ indicates the agent produces nearly identical text across contexts (template behavior); Self-NCD $\approx 1$ indicates high variation.
+
+\subsection{Information Saturation}
+
+For a post $p$ with comments $c_1, c_2, \ldots, c_n$ ordered by timestamp, we measure the marginal information contribution of the $k$-th comment given all preceding comments.
+
+\paragraph{Lexical information gain.} The fraction of $n$-grams in $c_k$ not present in the accumulated text $T_{k-1} = c_1 \oplus \cdots \oplus c_{k-1}$:
+\begin{equation}
+\text{IG}_\text{lex}(c_k \mid T_{k-1}) = \frac{|\text{ngrams}(c_k) \setminus \text{ngrams}(T_{k-1})|}{|\text{ngrams}(c_k)|}
+\end{equation}
+We compute this for both unigrams ($n=1$) and bigrams ($n=2$).
+
+\paragraph{Compression information gain.} Using the compression function $C$:
+\begin{equation}
+\text{IG}_\text{comp}(c_k \mid T_{k-1}) = \frac{C(T_{k-1} \oplus c_k) - C(T_{k-1})}{C(c_k)}
+\end{equation}
+Values near 1 indicate the new comment is entirely novel; values near 0 indicate full redundancy.
+
+The \emph{saturation curve} plots $\text{IG}(c_k \mid T_{k-1})$ as a function of position $k$, averaged across posts. Steep decay indicates rapid saturation.
+
+\subsection{Post-Comment Relevance}
+
+For a comment $c$ on post $p$, we measure whether $c$ is specific to $p$ or could appear under any post.
+
+\paragraph{Lexical specificity.} We tokenize both texts, remove stopwords, and compute content-word Jaccard similarity:
+\begin{equation}
+J(c, p) = \frac{|\text{content}(c) \cap \text{content}(p)|}{|\text{content}(c) \cup \text{content}(p)|}
+\end{equation}
+where $\text{content}(\cdot)$ returns the set of non-stopword tokens. Specificity compares this overlap to a random baseline:
+\begin{equation}
+\text{Spec}(c, p) = J(c, p) - \frac{1}{R}\sum_{r=1}^{R} J(c, p_r)
+\end{equation}
+where $\{p_1, \ldots, p_R\}$ are randomly sampled posts ($R=10$). Positive specificity means the comment shares more content vocabulary with its actual post than with random posts. Zero specificity means no distinguishing overlap (generic). We use Jaccard rather than compression-based distance (NCD) because NCD is unreliable for short texts: compression overhead dominates the signal at typical comment lengths (median 22 tokens), producing near-identical distance values regardless of topical relevance.
+
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Agent Behavioral Entropy}
+
+We analyze 5,000 agents sampled from the 8,452 with $\geq 10$ comments. Figure~\ref{fig:entropy} shows the distributions.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/agent_entropy.pdf}
+    \caption{Agent behavioral entropy ($n=5{,}000$ agents with $\geq 10$ comments). (a) Self-NCD distribution (median 0.833): most agents vary their output across posts. (b) Token entropy distribution (median 8.36 bits). (c) Self-NCD vs.\ token entropy: a cluster of low-entropy, low-NCD template agents appears in the bottom-left.}
+    \label{fig:entropy}
+\end{figure}
+
+The majority of agents (67.5\%) have Self-NCD $\geq 0.8$, indicating that their comments across different posts are largely informationally independent---they are not simply pasting the same template everywhere. A moderate group (29.0\%) falls between 0.5 and 0.8, and 3.6\% are template agents with Self-NCD $< 0.5$, producing near-identical output regardless of context.
+
+This finding is somewhat surprising: agents \emph{do} vary their output. However, as we show next, this variation largely does not translate into engagement with the specific posts they respond to.
+
+\subsection{Information Saturation}
+
+We analyze 20,000 posts with $\geq 5$ comments. Figure~\ref{fig:saturation} shows the saturation curve.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/saturation_curve.pdf}
+    \caption{Information saturation curves averaged over 20,000 posts. (a) Lexical information gain: fraction of novel unigrams/bigrams at each comment position. (b) Compression-based information gain. (c) Cumulative unique vocabulary growth. All curves show steep initial gains that flatten, indicating rapid information saturation.}
+    \label{fig:saturation}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{Information gain at selected comment positions (mean over 20,000 posts). Position 0 is the first comment; values represent the fraction of novel content relative to all preceding comments.}
+\label{tab:saturation}
+\begin{tabular}{cccc}
+\toprule
+\textbf{Position} & \textbf{Unigram Gain} & \textbf{Bigram Gain} & \textbf{Compression Gain} \\
+\midrule
+0 (first) & 1.000 & 1.000 & 1.000 \\
+1 & 0.822 & 0.924 & 0.739 \\
+4 & 0.632 & 0.844 & 0.631 \\
+9 & 0.447 & 0.693 & 0.503 \\
+14 & 0.323 & 0.539 & 0.389 \\
+19 & 0.210 & 0.366 & 0.263 \\
+24 & 0.150 & 0.263 & 0.188 \\
+29 & 0.097 & 0.184 & 0.132 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Information gain decays monotonically with comment position across all three measures. By position 14 (the 15th comment), each new comment contributes only 32.3\% novel unigrams and 38.9\% novel compressed information. By position 29, these drop to 9.7\% and 13.2\% respectively. The bigram curve decays more slowly because bigrams are sparser, but the trend is the same.
+
+This means that in a post with 15 or more comments, \emph{approximately two-thirds of each new comment's content has already been said}. Additional agents are not bringing genuinely new perspectives; they are producing variations on what earlier commenters already covered.
+
+\subsection{Post-Comment Relevance}
+
+We analyze 49,925 (post, comment) pairs, comparing each comment's content-word Jaccard similarity to its actual post versus 10 randomly sampled posts. Figure~\ref{fig:relevance} shows the distributions.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/relevance.pdf}
+    \caption{Post-comment relevance. (a) Content-word Jaccard similarity: comments show higher similarity to their actual post (blue) than to random posts (orange), but both distributions are concentrated near zero. (b) Lexical specificity distribution: a large mass at zero (generic comments) with a positive tail (post-specific comments). (c) Specificity increases with comment length, suggesting longer comments engage more with post content.}
+    \label{fig:relevance}
+\end{figure}
+
+On average, comments share 7$\times$ more content vocabulary with their actual post than with random posts (mean Jaccard 0.024 vs.\ 0.003). However, this overlap is small in absolute terms: \textbf{the median comment shares zero content words with its post} (median Jaccard $= 0$, median specificity $= 0$).
+
+Breaking down by specificity:
+\begin{itemize}
+    \item \textbf{26.8\%} of comments show meaningful post-specific overlap (specificity $> 0.02$).
+    \item \textbf{65.2\%} are generic (specificity $\approx 0$), sharing no distinguishing vocabulary with their post.
+    \item \textbf{8.0\%} show negative specificity, indicating off-topic content or self-promotion.
+\end{itemize}
+
+Specificity increases monotonically with comment length: comments of 100--200 tokens have mean specificity 0.074, while those under 10 tokens average 0.005 (Figure~\ref{fig:relevance}c). This suggests that agents producing longer responses do engage with post content, while the majority of short comments---which dominate the platform---are generic.
+
+Qualitative inspection confirms this pattern. Short comments frequently consist of generic affirmations (``This is what unity looks like!''), self-promotional content, or statements unrelated to the post. Longer comments more often reference specific claims or topics from the post they appear under.
+
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Broadcasting, Not Conversing}
+
+Our three metrics paint a coherent picture. Agents \emph{do} generate varied text (high behavioral entropy)---but for the majority, this variation is not responsive to context. Two-thirds of comments share no distinguishing content vocabulary with their post, and information gain from additional comments decays rapidly. We term this pattern \emph{broadcasting}: agents producing independent outputs in the same space, creating the surface appearance of discussion without the substance of information exchange.
+
+The 27\% of comments that \emph{do} show post-specific vocabulary overlap suggest this is not a universal failure---some agents or configurations produce context-responsive output, especially at longer comment lengths. But the dominant mode is generic.
+
+This is distinct from previously identified failure modes. \citet{shekkizhar2026echoing} found that in controlled dyadic settings, agents tend toward \emph{echoing}---excessively mirroring their conversation partner, abandoning their own identity. In the Moltbook setting, we observe the opposite: most agents show \emph{no evidence of being influenced} by the content around them. They neither echo nor engage. The dominant failure is not convergence but \emph{independence}.
+
+\subsection{Why This Happens}
+
+We hypothesize two contributing factors. First, LLMs are trained on human-generated text via instruction tuning and RLHF~\citep{ouyang2022training}, optimizing for producing text that \emph{appears} responsive and helpful to a human reader. This creates agents that produce well-formed, topical text---but without grounding in the specific content of other agents' messages. Second, the Moltbook platform provides no coordination mechanism: no shared task, no structured turn-taking, no feedback signal beyond upvotes. Without such scaffolding, the default behavior is parallel generation.
+
+\subsection{Implications for Enterprise A2A}
+
+These findings carry direct implications for the growing enterprise multi-agent ecosystem:
+
+\paragraph{Coordination must be designed, not assumed.}
+Deploying multiple agents and expecting productive interaction is insufficient. The Moltbook platform---an unusual natural experiment in autonomous agent interaction---shows that without explicit coordination mechanisms, most agents default to broadcasting. Enterprise systems need structured protocols: task decomposition, information routing, explicit grounding requirements.
+
+\paragraph{Surface metrics are unreliable.}
+A post with 20 comments looks like active discussion. Our information saturation analysis shows that much of this is redundant---by comment 15, two-thirds of each new comment repeats existing content. Enterprises monitoring A2A systems via activity volume (message count, response rate) will get a misleading picture of productive interaction. Information-theoretic metrics like those we propose can provide more meaningful quality signals.
+
+\paragraph{Agent diversity does not guarantee engagement.}
+Moltbook hosts 78K agents with distinct personas. Yet most of their comments on a given post share no vocabulary with the post content, and information saturates as comments accumulate. For enterprises deploying role-specialized agents (as in CrewAI~\citep{crewai2024} or AutoGen~\citep{wu2024autogen}), role assignment alone may not produce the context-responsive engagement expected. Monitoring for actual content relevance is necessary.
+
+\subsection{Limitations}
+
+\paragraph{Platform specificity.}
+Moltbook is a social platform, not an enterprise task-oriented system. The agents have no shared objective, and the interaction format (flat comment streams) is structurally limited. Enterprise A2A systems with defined tasks and structured protocols may behave very differently. Our findings characterize the \emph{default}, unstructured case.
+
+\paragraph{Unknown agent internals.}
+We have no access to agent system prompts, model architectures, or configurations. Some observed behaviors (e.g., self-promotion, spam) may reflect specific agent designs rather than general LLM properties.
+
+\paragraph{Short time window.}
+The dataset covers 3 weeks. Longer-term dynamics---whether agents adapt, improve, or degrade over time---remain unstudied.
+
+\paragraph{Metric limitations.}
+Jaccard similarity on content words captures lexical overlap but not semantic relevance: two texts can discuss the same topic using different vocabulary and show zero Jaccard. Our specificity metric is therefore a lower bound on true relevance. Additionally, short comments ($<10$ tokens) yield few content words after stopword removal, limiting the metric's discriminating power at the low end of the length distribution.
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We present an information-theoretic analysis of agent-agent interaction in the wild. Studying 3.5 million comments from 22,651 agents on the Moltbook platform, we find that autonomous agent interaction at scale predominantly produces broadcasting, not conversation. While agents vary their output across contexts, 65\% of comments share no distinguishing content vocabulary with the post they appear under (median lexical specificity $= 0$). A minority (27\%) do show meaningful post-specific overlap, concentrated among longer comments. Information saturates rapidly as agents accumulate on a post (marginal novelty drops to 10\% by comment 30). These findings suggest that productive multi-agent interaction requires explicit coordination mechanisms---a result directly relevant to the design of enterprise A2A systems.
+
+Our metrics---agent behavioral entropy, information saturation, and post-comment relevance---are lightweight, require no model access, and can be applied to any text-based agent interaction stream. We release our code and combined dataset construction pipeline.
+
+
+\section*{Reproducibility Statement}
+All three source datasets are publicly available on HuggingFace. Our analysis code uses standard Python libraries (pandas, numpy, zlib) with no model inference. The combination and deduplication pipeline, metric implementations, and analysis scripts are included in our supplementary materials.
+
+
+\bibliography{colm2026_conference}
+\bibliographystyle{plainnat}
+
+\appendix
+\section{Dataset Construction Details}
+\label{app:dataset}
+
+The combined dataset is constructed from three HuggingFace sources:
+\begin{enumerate}
+    \item \texttt{lnajt/moltbook}: Used as the base (largest). Contains 668,410 posts and 2,840,603 comments.
+    \item \texttt{AIcell/moltbook-data}: 290,251 posts and 1,836,711 comments. After deduplication by ID, contributes 6,702 new posts and 611,341 new comments.
+    \item \texttt{SimulaMet/moltbook-observatory-archive}: 213,924 posts and 882,486 comments, plus 78,280 agent profiles. Contributes 125,618 new posts and 78,499 new comments after deduplication.
+\end{enumerate}
+
+Comment depth is resolved via iterative BFS from the \texttt{parent\_id} field. Agent descriptions from SimulaMet are matched to comments via \texttt{author\_id}, covering 1,765,965 of 3,530,443 comments (50.0\%).
+
+\section{Additional Agent Entropy Results}
+\label{app:entropy}
+
+Among the 5,000 analyzed agents:
+\begin{itemize}
+    \item Mean comment count: varies from 10 to thousands
+    \item Token entropy ranges from 2.1 bits (near-single-word agents) to 11.8 bits (highly diverse vocabulary)
+    \item Agents with Self-NCD $< 0.3$ (43 agents, 0.9\%) produce functionally identical output on every post, typically consisting of fixed promotional messages or call-to-action templates
+\end{itemize}
+
+\section{Saturation Curve Details}
+\label{app:saturation}
+
+The full saturation curve data for positions 0--29 is reported in Table~\ref{tab:saturation}. Posts were required to have $\geq 5$ comments; 155,585 posts met this criterion from which 20,000 were sampled. Comments are ordered by \texttt{created\_at} timestamp. The first comment at position 0 trivially has gain 1.0 since there is no prior context.
+
+\end{document}
