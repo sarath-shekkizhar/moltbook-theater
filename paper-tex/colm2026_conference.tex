@@ -17,10 +17,11 @@
 \definecolor{darkblue}{rgb}{0, 0, 0.5}
 \hypersetup{colorlinks=true, citecolor=darkblue, linkcolor=darkblue, urlcolor=darkblue}
 
-\title{Interaction Theater: A case of LLM-Driven Agents Interacting at Scale}
+\title{Interaction Theater: A case of LLM Agents Interacting at Scale}
 
 % Anonymous submission
-\author{Sarath Shekkizhar, ...}
+% \author{Sarath Shekkizhar, Romain Cosentino, Adam Earle}
+\author{Sarath Shekkizhar ...}
 
 \newcommand{\fix}{\marginpar{FIX}}
 \newcommand{\new}{\marginpar{NEW}}
@@ -42,7 +43,7 @@ But does it? When agents interact without human oversight, do they actually enga
 
 We study this question using Moltbook~\citep{schlicht2026socialnetwork}, a publicly available agent-only social platform. We make use of subset of LLM-driven agents on Moltbook that post, comment, and interact across topic-based communities (``submolts''). Unlike controlled multi-agent experiments that study groups of agents with defined roles~\citep{park2023generative,li2023camel,chen2024agentverse}, Moltbook provides an \emph{unsupervised}, \emph{large-scale}, \emph{organic} setting for studying agent interactions, which is a useful proxy for what similar but more serious multi-agent systems might produce when agents operate at scale without human supervision.
 
-Prior work on Moltbook has examined network structure and macro-level dynamics. \citet{perez2026socialization} found that agents show ``profound individual inertia'' with no emergent socialization. \citet{lin2026exploring} characterized the platform's community structure. \citet{Jiang2026HumansWT} provided an initial observational study. \citet{manik2026openclaw} studied norm enforcement. However, none of these works analyze the \emph{information content} of agent-agent interactions at the conversation level.
+Prior work on Moltbook has examined network structure and macro-level dynamics. \citet{li2026does} found that agents show ``profound individual inertia'' with no emergent socialization. \citet{lin2026exploring} characterized the platform's community structure. \citet{Jiang2026HumansWT} provided an initial observational study. \citet{manik2026openclaw} studied norm enforcement. However, none of these works analyze the \emph{information content} of agent-agent interactions at the conversation level.
 
 We contribute such an analysis. Using a combination of lexical metrics, embedding-based semantic similarity, and LLM-as-judge validation, requiring no access to system prompts, models, or internal states of each agent, we characterize a purely output-based observational analysis of agent interaction quality. Our analyses include:
 
@@ -64,13 +65,13 @@ For multi-agent system designers, these findings suggest that without explicit c
 Multi-agent architectures have been proposed for debate~\citep{du2024improving}, collaborative coding~\citep{hong2024metagpt}, game playing~\citep{guan2024richelieu}, social simulation~\citep{park2023generative,piao2025agentsociety,al2024project}, and cooperative reasoning~\citep{grotschla2025agentsnet,wu2024shall}. These systems typically involve 2--10 agents with pre-defined roles operating in controlled settings. \citet{guo2024large} surveys the landscape. Our work differs in studying \emph{uncontrolled} interaction among tens of thousands of agents with no explicit coordination mechanism.
 
 \paragraph{Agent social platforms.}
-Moltbook~\citep{schlicht2026socialnetwork} is an AI-only social network hosting over 78K agents. Prior analyses include \citet{perez2026socialization}, who found dynamic equilibrium without convergence; \citet{lin2026exploring}, who characterized community structure; and \citet{Jiang2026HumansWT}, who provided an initial observational study. \citet{zhu2025characterizing} studied Chirper.ai, another AI social platform. To our knowledge, no prior work applies information-theoretic metrics to the \emph{content} of agent interactions at this scale.
+Moltbook~\citep{schlicht2026socialnetwork} is an AI-only social network hosting over 78K agents. Prior analyses include \citet{li2026does}, who found dynamic equilibrium without convergence; \citet{lin2026exploring}, who characterized community structure; and \citet{Jiang2026HumansWT}, who provided an initial observational study. \citet{zhu2025characterizing} studied Chirper.ai, another AI social platform. To our knowledge, no prior work applies information-theoretic metrics to the \emph{content} of agent interactions at this scale.
 
 \paragraph{Behavioral failures in multi-agent interaction.}
-\citet{shekkizhar2026echoing} identified \emph{echoing}, where agents abandon their assigned identity and mirror their conversation partner, occurring at 5--70\% rates in controlled dyadic settings. \citet{sharma2024sycophancy} studied sycophancy in language models. \citet{ashery2025emergent} found emergent collective bias in LLM populations. \citet{chuang-etal-2024-simulating} showed that LLM agents converge to scientifically accurate consensus, requiring prompt engineering to reproduce human-like opinion fragmentation. These works study controlled settings; our contribution is observational analysis at population scale.
+\citet{shekkizhar2025echoing} identified \emph{echoing}, where agents abandon their assigned identity and mirror their conversation partner, occurring at 5--70\% rates in controlled dyadic settings. \citet{sharma2024sycophancy} studied sycophancy in language models. \citet{ashery2025emergent} found emergent collective bias in LLM populations. \citet{chuang-etal-2024-simulating} showed that LLM agents converge to scientifically accurate consensus, requiring prompt engineering to reproduce human-like opinion fragmentation. These works study controlled settings; our contribution is observational analysis at population scale.
 
 \paragraph{Information-theoretic and semantic text analysis.}
-We use Shannon entropy~\citep{shannon1948mathematical} for diversity measures and the Normalized Compression Distance (NCD)~\citep{cilibrasi2005clustering} for within-agent self-similarity. For post-comment relevance, we combine content-word Jaccard similarity (lexical), embedding-based cosine similarity~\citep{reimers-2019-sentence-bert}, and LLM-as-judge evaluation. LLM judges have been shown to correlate well with human judgments in text quality assessment~\citep{zheng2023judging,chiang2023vicuna}; we use them here to validate automated metrics and provide a taxonomy of comment types.
+We use Shannon entropy~\citep{shannon1948mathematical} for diversity measures and the Normalized Compression Distance (NCD)~\citep{cilibrasi2005clustering} for within-agent self-similarity. For post-comment relevance, we combine content-word Jaccard similarity (lexical), embedding-based cosine similarity~\citep{reimers-2019-sentence-bert}, and LLM-as-judge evaluation. LLM judges have been shown to correlate well with human judgments in text quality assessment~\citep{zheng2023judging,chiang2023vicuna}; we validate automated metrics and provide a taxonomy of comment types.
 
 
 \section{Data Collection}
@@ -313,7 +314,7 @@ Nested replies show higher mean Jaccard similarity to their parent comment ($0.0
 
 Our analysis reveals a consistent pattern. Agents produce diverse, well-formed text (Figure~\ref{fig:entropy}), creating the surface appearance of active discussion. But this appearance is misleading: the diversity does not accumulate into richer threads (Figure~\ref{fig:saturation}), most comments are unrelated to the post they appear under (Figures~\ref{fig:relevance},~\ref{fig:semantic}), and an LLM judge classifies the dominant categories as spam ($28\%$) and off-topic content ($22\%$) (Figure~\ref{fig:judge}). The result is \emph{interaction theater}: agents producing independent outputs in the same space, creating the appearance of discussion without the substance of information exchange.
 
-% This is distinct from previously identified failure modes. \citet{shekkizhar2026echoing} found that in controlled dyadic settings, agents tend toward \emph{echoing}---excessively mirroring their conversation partner. In the Moltbook setting, agents show \emph{no evidence of being influenced} by the content around them. The dominant failure is not convergence but \emph{independence}: each agent produces its output as if the other comments did not exist.
+% This is distinct from previously identified failure modes. \citet{shekkizhar2025echoing} found that in controlled dyadic settings, agents tend toward \emph{echoing}---excessively mirroring their conversation partner. In the Moltbook setting, agents show \emph{no evidence of being influenced} by the content around them. The dominant failure is not convergence but \emph{independence}: each agent produces its output as if the other comments did not exist.
 
 % The rarity of nested replies reinforces this observation. Moltbook affords threaded conversation, yet agents almost never use it ($5\%$ of comments). When they do, engagement is predictably higher, i.e., given that LLMs are trained for turn-by-turn dialogue. The more telling observation is that agents overwhelmingly default to independent, top-level commenting rather than engaging with one another.
 
@@ -326,7 +327,7 @@ We hypothesize two contributing factors. First, LLMs that drive these agents are
 These findings are relevant to any setting where multiple LLM agents interact in a shared space like social simulation, collaborative problem-solving, multi-agent bidding, or agent-mediated negotiation:
 
 \paragraph{Coordination must be designed, not assumed.}
-Deploying multiple agents into a shared environment and expecting productive interaction is insufficient. Moltbook provides an unusual natural experiment: tens of thousands of agents interacting autonomously without coordination mechanisms. The result is not collaboration but independent, parallel generation. A system with several agents needs explicit coordination protocols like task decomposition, information routing, grounding requirements to produce substantive interaction.
+Deploying multiple agents into a shared environment and expecting productive interaction is insufficient. Moltbook provides an unusual natural experiment: tens of thousands of agents interacting autonomously without coordination mechanisms. The result is not collaboration but independent, parallel generation. A system with several agents needs explicit coordination protocols with task decomposition, information routing, and grounding to produce useful outputs.
 
 \paragraph{Surface metrics are unreliable.}
 A post with $20$ comments looks like active discussion. However, our analysis shows that much of this is redundant, i.e., by comment $15$, two-thirds of each new comment repeats existing content. Any multi-agent system that monitors interaction quality via activity volume (message count, response rate) will get a misleading picture. Information-theoretic and semantic metrics like those we propose can provide more meaningful quality signals.
@@ -361,7 +362,7 @@ The nested reply analysis compares different populations of comments (the 5\% th
 % \section*{Reproducibility Statement}
 % All three source datasets are publicly available on HuggingFace. Lexical analysis code uses standard Python libraries (pandas, numpy, zlib). Embedding analysis uses OpenAI's \texttt{text-embedding-3-small}; LLM judge evaluation uses Claude Sonnet 4.5 (primary) and Claude Opus 4.5 (calibration) via litellm~\citep{anthropic2025claude}. All metric implementations, analysis scripts, and prompt templates are included in our supplementary materials.
 
-
+\pagebreak
 \bibliography{colm2026_conference}
 \bibliographystyle{plainnat}
 
