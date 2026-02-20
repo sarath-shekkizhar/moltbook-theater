@@ -27,3 +27,4 @@ arXiv*
 .DS_Store
 .cursor/
 cache/
+.env
