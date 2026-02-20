@@ -6,6 +6,20 @@ dist/
 wheels/
 *.egg-info
 
+# tex compiled files
+paper-tex/*.pdf
+paper-tex/*.aux
+paper-tex/*.log
+paper-tex/*.out
+paper-tex/*.tex
+paper-tex/*.sty
+paper-tex/*.bst
+paper-tex/*.bbl
+paper-tex/*.blg
+paper-tex/*.fls
+paper-tex/*.fdb_latexmk
+paper-tex/*.synctex.gz
+
 # Virtual environments
 .venv
 arXiv*
